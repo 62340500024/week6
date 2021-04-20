@@ -49,14 +49,20 @@ TIM_HandleTypeDef htim11;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+void Pcontrol();
 uint8_t ADCUpdateFlag = 0;
 uint16_t ADCFeedBack = 0;
 
-uint16_t PWMOut = 3000;
+float PWMOut = 3000;
 
 uint64_t _micro = 0;
 uint64_t TimeOutputLoop = 0;
+float VADC = 0;
+float error = 0;
+float K = 1;
+float setpoint = 1;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -130,7 +136,7 @@ int main(void) {
 		if (micros() - TimeOutputLoop > 1000) {
 			TimeOutputLoop = micros();
 			// #001
-
+			 Pcontrol();
 			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, PWMOut);
 
 		}
@@ -442,6 +448,7 @@ static void MX_GPIO_Init(void) {
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	ADCFeedBack = HAL_ADC_GetValue(&hadc1);
+	VADC = ADCFeedBack*3.3/4096;
 	ADCUpdateFlag = 1;
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -452,6 +459,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 __inline__ uint64_t micros() {
 	return _micro + htim11.Instance->CNT;
+}
+
+void Pcontrol(){
+	error = setpoint - VADC;
+	PWMOut =PWMOut+( K * error);
 }
 /* USER CODE END 4 */
 
